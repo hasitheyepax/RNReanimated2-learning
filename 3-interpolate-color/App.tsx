@@ -1,6 +1,13 @@
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
-import { StyleSheet, Switch, Text, View } from "react-native";
+import { Dimensions, StyleSheet, Switch, Text, View } from "react-native";
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 
 const Colors = {
   dark: {
@@ -25,17 +32,59 @@ type Theme = "light" | "dark";
 export default function App() {
   const [theme, setTheme] = useState<Theme>("light");
 
+  // const progress = useSharedValue(0);
+  const progress = useDerivedValue(() => {
+    return theme === "dark" ? withTiming(1) : withTiming(0);
+  }, [theme]);
+
+  const rStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      progress.value,
+      [0, 1],
+      [Colors.light.background, Colors.dark.background]
+    );
+
+    return { backgroundColor };
+  });
+
+  const rCircleStyle = useAnimatedStyle(() => {
+    const backgroundColor = interpolateColor(
+      progress.value,
+      [0, 1],
+      [Colors.light.circle, Colors.dark.circle]
+    );
+
+    return { backgroundColor };
+  });
+
+  const rTextStyle = useAnimatedStyle(() => {
+    const color = interpolateColor(
+      progress.value,
+      [0, 1],
+      [Colors.light.text, Colors.dark.text]
+    );
+
+    return { color };
+  });
+
   return (
-    <View style={styles.container}>
-      <Switch
-        value={theme === "dark"}
-        onValueChange={(toggled) => {
-          setTheme(toggled ? "dark" : "light");
-        }}
-      />
-    </View>
+    <Animated.View style={[styles.container, rStyle]}>
+      <Animated.Text style={[styles.text, rTextStyle]}>Theme</Animated.Text>
+      <Animated.View style={[styles.circle, rCircleStyle]}>
+        <Switch
+          value={theme === "dark"}
+          onValueChange={(toggled) => {
+            setTheme(toggled ? "dark" : "light");
+          }}
+          trackColor={SWITCH_TRACK_COLOR}
+          thumbColor={"violet"}
+        />
+      </Animated.View>
+    </Animated.View>
   );
 }
+
+const SIZE = Dimensions.get("window").width * 0.7;
 
 const styles = StyleSheet.create({
   container: {
@@ -43,5 +92,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
+  },
+  circle: {
+    width: SIZE,
+    height: SIZE,
+    backgroundColor: "#FFF",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: SIZE / 2,
+    shadowOffset: {
+      width: 0,
+      height: 20,
+    },
+    shadowRadius: 10,
+    shadowOpacity: 0.1,
+    elevation: 8,
+  },
+  text: {
+    fontSize: 70,
+    textTransform: "uppercase",
+    fontWeight: "700",
+    letterSpacing: 14,
+    marginBottom: 35,
   },
 });
